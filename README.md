@@ -124,3 +124,4 @@ python -m http.server 8000
 
 - Supabase แพ็กเกจฟรีจะ **pause project ที่ไม่มีการใช้งาน 7 วัน** — ถ้าหน้าเว็บขึ้น “เชื่อมต่อฐานข้อมูลไม่ได้” ให้เข้า Dashboard แล้วกด Restore
 - สำรองข้อมูล: Dashboard → Table Editor → เลือกตาราง → Export to CSV (แพ็กเกจฟรีไม่มี backup อัตโนมัติแบบ point-in-time)
+# oil-palm-seedling-reservation
