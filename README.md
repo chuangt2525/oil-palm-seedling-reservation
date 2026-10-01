@@ -61,6 +61,13 @@ Supabase project: `oil-palm-seedling-reservation` (ref `naiyampjitchsygixcyq`, r
 - **ลบข้อมูลที่ถูกใช้งานไม่ได้** — foreign key `on delete restrict` (เช่น ลบสายพันธุ์ที่มีการจองอยู่)
 - **ตรวจค่า** — จำนวน > 0, คัดทิ้ง ≤ จำนวนเพาะ, สถานะต้องเป็น 4 ค่าที่กำหนด
 
+### ใช้กับ Supabase project อื่น
+
+1. Dashboard ของ project นั้น → **SQL Editor → New query** → วางเนื้อหา `supabase/setup.sql` ทั้งไฟล์ → **Run** (รันครั้งเดียวกับ project ที่ยังไม่มีตารางเหล่านี้)
+2. **Project Settings → API Keys** → คัดลอก **Publishable key** (`sb_publishable_...`)
+3. แก้ `assets/config.js`: `supabaseUrl` = `https://<project ref>.supabase.co`, `supabaseKey` = key จากข้อ 2
+4. เพิ่มเจ้าหน้าที่ตามหัวข้อ 4 แล้ว commit + push
+
 ## 4. สิทธิ์การใช้งาน
 
 | ผู้ใช้ | ดูข้อมูล | บันทึก/แก้ไข/ลบ | ออกเลขใบจอง |
