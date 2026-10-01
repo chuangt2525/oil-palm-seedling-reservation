@@ -2,6 +2,6 @@
 // Row Level Security (only accounts listed in public.staff can read/write).
 // Leave both values empty to run the page in demo mode (sample data, nothing saved).
 window.APP_CONFIG = {
-  supabaseUrl: "https://naiyampjitchsygixcyq.supabase.co",
-  supabaseKey: "sb_publishable_-vJzTeZ5qZ2VVHwgfijGoA_I4k9VC6S"
+  supabaseUrl: "https://nfglyamttoqsexxtomrs.supabase.co",
+  supabaseKey: "sb_publishable_FgODc8mco4gyWNe0WdItbw_3__TJVmt"
 };
