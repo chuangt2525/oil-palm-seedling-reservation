@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f5f4">
+<title>Oil Palm Seedling Reservation System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23158f2f%27 stroke-width=%272%27 stroke-linecap=%27round%27%3E%3Cpath d=%27M12 21v-9M12 12c0-4 3-7 8-7 0 5-3 7-8 7zM12 14c0-3-2-6-7-6 0 4 2 6 7 6z%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>Oil Palm Seedling Reservation System<small>คำนวณยอดเพาะ · ตรวจสอบยอดคงเหลือ · บันทึกการจองรายวัน</small></h1>
+  <div class="who"><span id="mode" class="mode demo">กำลังเชื่อมต่อฐานข้อมูล…</span><span id="who_email" class="small muted" hidden></span><button class="btn ghost sm" id="logout" type="button" hidden>ออกจากระบบ</button></div>
+</header>
+
+<!-- LOGIN -->
+<section id="loginView" hidden>
+  <div class="panel login">
+    <h2>เข้าสู่ระบบ</h2>
+    <p class="small muted">สำหรับเจ้าหน้าที่ — ใช้อีเมลและรหัสผ่านที่ผู้ดูแลระบบสร้างให้</p>
+    <form class="f" id="loginForm" autocomplete="on">
+      <label>อีเมล<input type="email" id="li_email" autocomplete="username" required></label>
+      <label>รหัสผ่าน<input type="password" id="li_pass" autocomplete="current-password" required></label>
+      <div class="full actions"><button class="btn" type="submit" id="li_submit">เข้าสู่ระบบ</button><span class="msg" id="li_msg"></span></div>
+    </form>
+  </div>
+</section>
+
+<div id="appView" hidden>
+<nav class="tabs" role="tablist">
+  <button role="tab" data-tab="dash" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-4H4zM14 4v4h6V4z"/></svg><span class="l">Dashboard</span><span class="s">ภาพรวม</span></button>
+  <button role="tab" data-tab="book" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg><span class="l">ตรวจสอบ &amp; จอง</span><span class="s">จอง</span></button>
+  <button role="tab" data-tab="list" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg><span class="l">รายการจองรายวัน</span><span class="s">รายการ</span></button>
+  <button role="tab" data-tab="plant" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 12c0-4 3-7 8-7 0 5-3 7-8 7z"/><path d="M12 14c0-3-2-6-7-6 0 4 2 6 7 6z"/></svg><span class="l">บันทึกการเพาะ</span><span class="s">เพาะ</span></button>
+  <button role="tab" data-tab="setup" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span class="l">สายพันธุ์ &amp; แปลงเพาะปลูก</span><span class="s">ตั้งค่า</span></button>
+</nav>
+
+<!-- DASHBOARD -->
+<section id="tab-dash">
+  <div class="kpis" id="kpis"></div>
+  <div class="grid2">
+    <div class="panel">
+      <h2>อัตราการจองตามสายพันธุ์</h2>
+      <div id="varBars"></div>
+      <div class="legend"><span style="--c:var(--primary)">ส่งมอบแล้ว</span><span style="--c:var(--orange)">จอง/ยืนยัน (รอส่ง)</span><span style="--c:var(--track)">คงเหลือจองได้</span></div>
+    </div>
+    <div class="panel">
+      <h2>ยอดเพาะ vs ยอดจอง 14 วันล่าสุด</h2>
+      <div class="chartbox" id="daily"></div>
+      <div class="legend"><span style="--c:var(--primary)">ยอดที่ขายได้ (ต้น)</span><span style="--c:var(--orange)">จอง (ต้น)</span><span style="--c:var(--ink)">อัตราการจองสะสม %</span></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="panel"><h2>สรุปยอดที่จองได้จากยอดคงเหลือ</h2><div class="tblwrap" id="sumTbl"></div></div>
+    <div class="panel"><h2>การใช้พื้นที่แปลงเพาะปลูก</h2><div class="tblwrap" id="pondTbl"></div></div>
+  </div>
+  <div class="grid2">
+    <div class="panel"><h2>ยอดขายได้และการจองตาม Lot</h2><div class="tblwrap" id="lotDash"></div></div>
+  </div>
+</section>
+
+<!-- BOOK -->
+<section id="tab-book" hidden>
+  <div class="grid2">
+    <div class="panel">
+      <h2>บันทึกการจอง</h2>
+      <div class="step">1 · เลือก Lot / สายพันธุ์</div>
+      <div class="lotpick" id="lotPick" role="radiogroup" aria-label="เลือก Lot / สายพันธุ์"></div>
+      <select id="b_var" hidden aria-hidden="true"></select>
+      <div class="step">2 · ระบุจำนวนและผู้จอง</div>
+      <form class="f" id="bookForm" autocomplete="off">
+        <label>จำนวน (ต้น)<input type="number" id="b_qty" min="1" step="1" inputmode="numeric" required></label>
+        <label>วันที่จอง<input type="date" id="b_date" required></label>
+        <div class="full check" id="checkBox"></div>
+        <label>ชื่อผู้จอง<input id="b_cust" required autocomplete="name"></label>
+        <label>เบอร์โทร<input id="b_phone" inputmode="tel" autocomplete="tel"></label>
+        <label>วันที่นัดรับ<input type="date" id="b_pick"></label>
+        <label>หมายเหตุ<input id="b_note"></label>
+        <div class="full actions submitbar"><button class="btn" id="b_submit" type="submit">บันทึกการจอง</button><button class="btn ghost" id="b_lastpdf" type="button" hidden>พิมพ์ใบจอง PDF</button><span class="msg" id="b_msg"></span></div>
+      </form>
+    </div>
+    <div class="panel"><h2>ยอดคงเหลือทุก Lot</h2><div class="tblwrap" id="availMini"></div></div>
+  </div>
+</section>
+
+<!-- LIST -->
+<section id="tab-list" hidden>
+  <div class="panel">
+    <form class="docsearch" id="docSearch" autocomplete="off">
+      <label for="d_no">ตรวจสอบจากเลขที่ใบจอง</label>
+      <div class="dsrow"><input id="d_no" placeholder="เช่น BK691001-0001" spellcheck="false" autocapitalize="characters"><button class="btn" type="submit">ตรวจสอบ</button></div>
+    </form>
+    <div id="docResult"></div>
+    <div class="filters">
+      <label>วันที่จอง<input type="date" id="l_date"></label>
+      <label>สายพันธุ์<select id="l_var"></select></label>
+      <label>สถานะ<select id="l_st"><option value="">ทั้งหมด</option><option value="reserved">จอง</option><option value="confirmed">ยืนยัน</option><option value="delivered">ส่งมอบแล้ว</option><option value="cancelled">ยกเลิก</option></select></label>
+      <label>ค้นหา<input id="l_q" placeholder="เลขที่ใบจอง / ชื่อ / เบอร์"></label>
+    </div>
+    <div class="actions small"><button class="btn ghost sm" id="l_clear" type="button">ล้างตัวกรอง</button><span class="muted" id="l_count"></span></div>
+    <div id="bookList"></div>
+  </div>
+</section>
+
+<!-- PLANT -->
+<section id="tab-plant" hidden>
+  <div class="grid2">
+    <div class="panel">
+      <h2 id="p_title">บันทึกการเพาะรายวัน</h2>
+      <form class="f" id="plantForm" autocomplete="off">
+        <input type="hidden" id="p_id">
+        <label>แปลงเพาะปลูก<select id="p_pond" required></select></label>
+        <label>วันที่เพาะ<input type="date" id="p_date" required></label>
+        <label>Lot การปลูก<select id="p_lot" required></select></label>
+        <label>สายพันธุ์<select id="p_var" required></select></label>
+        <label>จำนวนเพาะ (ต้น)<input type="number" id="p_qty" min="1" step="1" required></label>
+        <label>คัดทิ้ง/เสียหาย (ต้น)<input type="number" id="p_cull" min="0" step="1" value="0"></label>
+        <label>หมายเหตุ<input id="p_note"></label>
+        <div class="full actions"><button class="btn" type="submit" id="p_submit">บันทึก</button><button class="btn ghost" type="button" id="p_cancel" hidden>ยกเลิกแก้ไข</button><span class="msg" id="p_msg"></span></div>
+      </form>
+      <p class="small muted">ยอดจองได้ = จำนวนเพาะ − คัดทิ้ง/เสียหาย − ยอดจองที่ยังไม่ยกเลิก (คิดรวมทุกแปลงตามสายพันธุ์)</p>
+    </div>
+    <div class="panel"><h2>ยอดเพาะแยกตามแปลง</h2><div class="tblwrap" id="pondSum"></div></div>
+  </div>
+  <div class="panel" style="margin-bottom:16px"><h2>สรุปยอดเพาะตาม Lot</h2><p class="small muted" style="margin:-6px 0 10px">Lot1 = ต้นปี (ม.ค.–มิ.ย.) · Lot2 = กลางปี (ก.ค.–ธ.ค.)</p><div class="tblwrap" id="lotSum"></div></div>
+  <div class="panel"><h2>ประวัติการเพาะตาม Lot</h2><div id="plantList"></div></div>
+</section>
+
+<!-- SETUP -->
+<section id="tab-setup" hidden>
+  <div class="grid2">
+    <div class="panel">
+      <h2>สายพันธุ์ปาล์ม</h2>
+      <form class="f" id="varForm" autocomplete="off">
+        <input type="hidden" id="v_id">
+        <label>ชื่อสายพันธุ์<input id="v_name" required></label>
+        <label>ยอดที่ขายได้ (ต้น)<input type="number" id="v_net" min="0" step="1" placeholder="คำนวณจากบันทึกการเพาะ"></label>
+        <label>รายละเอียด<input id="v_note"></label>
+        <p class="full small muted" style="margin:0">แก้ไขยอดที่ขายได้โดยตรง ระบบจะเก็บส่วนต่างเป็น “ยอดปรับ” และบวกกับยอดจากบันทึกการเพาะ ปล่อยว่างเพื่อคงค่าเดิม</p>
+        <div class="full actions"><button class="btn" type="submit">บันทึกสายพันธุ์</button><button class="btn ghost" type="button" id="v_cancel" hidden>ยกเลิกแก้ไข</button><span class="msg" id="v_msg"></span></div>
+      </form>
+      <div class="tblwrap" id="varList" style="margin-top:14px"></div>
+    </div>
+    <div class="panel">
+      <h2>แปลงเพาะปลูก</h2>
+      <form class="f" id="pondForm" autocomplete="off">
+        <input type="hidden" id="o_id">
+        <label>Lot<select id="o_lot" required><option value="L1">Lot1 (ต้นปี)</option><option value="L2">Lot2 (กลางปี)</option></select></label>
+        <label>สายพันธุ์<select id="o_var" required></select></label>
+        <label>ชื่อแปลง<input id="o_name" placeholder="เว้นว่าง = Lot/สายพันธุ์"></label>
+        <label>ความจุ (ต้น)<input type="number" id="o_cap" min="0" step="1"></label>
+        <label>หมายเหตุ<input id="o_note"></label>
+        <div class="full actions"><button class="btn" type="submit">บันทึกแปลง</button><button class="btn ghost" type="button" id="o_cancel" hidden>ยกเลิกแก้ไข</button><span class="msg" id="o_msg"></span></div>
+      </form>
+      <div class="tblwrap" id="pondList" style="margin-top:14px"></div>
+    </div>
+  </div>
+</section>
+</div><!-- /appView -->
+</div>
+
+<script src="assets/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
