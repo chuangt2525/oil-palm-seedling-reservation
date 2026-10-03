@@ -350,9 +350,38 @@ let lastBooked=null;
 function docPrefix(b){const d=b.date||today();return "BK"+String(+d.slice(0,4)+543).slice(2)+d.slice(5,7)+d.slice(8,10)+"-"}
 function nextDocNo(b){const pre=docPrefix(b);let mx=0;S.bookings.forEach(x=>{if(x.docNo&&x.docNo.startsWith(pre)){const n=parseInt(x.docNo.slice(pre.length),10);if(n>mx)mx=n}});return pre+String(mx+1).padStart(4,"0")}
 function docNoOf(b){return b.docNo||""}
-/* หัวใบจอง: ชื่อร้าน เบอร์โทร และโลโก้ (ต้นกล้าปาล์มงอกจากทะลายผลปาล์มบนดิน) */
+/* หัวใบจอง: ชื่อร้าน เบอร์โทร */
 const SHOP={name:"โกเพียวพันธุ์ปาล์ม",phone:"065-449-4201"};
-const SHOP_LOGO=`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 100 100"><defs><clipPath id="kpClip"><circle cx="50" cy="50" r="43"/></clipPath></defs><circle cx="50" cy="50" r="48" fill="#2e7d32"/><circle cx="50" cy="50" r="43" fill="#f3f8ec"/><g clip-path="url(#kpClip)"><path d="M0 76Q50 62 100 76V100H0Z" fill="#7a4a24"/><path d="M0 84Q50 72 100 84" fill="none" stroke="#9a6533" stroke-width="2"/></g><path d="M50 70Q48.5 62 50 54" fill="none" stroke="#5b8c2a" stroke-width="4" stroke-linecap="round"/><g transform="translate(50 54)">${[[-66,"#2e7d32"],[66,"#2e7d32"],[-33,"#4caf50"],[33,"#4caf50"],[0,"#388e3c"]].map(([a,c])=>`<g transform="rotate(${a})"><path d="M0 0C7-9 7-25 0-34C-7-25-7-9 0 0Z" fill="${c}"/><path d="M0-3V-30" stroke="#e8f3dc" stroke-width="1.2" opacity=".75"/></g>`).join("")}</g>${[[43,72],[57,72],[50,70],[46.5,77],[53.5,77]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="4.6" fill="#d84315"/><circle cx="${x-1.4}" cy="${y-1.4}" r="1.4" fill="#ff8a50"/>`).join("")}</svg>`;
+/* โลโก้ตราประทับ โกเพียวพันธุ์ปาล์ม: วงแหวนเขียวเข้มขอบทอง ชื่อร้านโค้งตามวง ต้นกล้าปาล์มใบขนนกงอกจากผลปาล์มสุก หน้าดวงอาทิตย์ */
+const SHOP_LOGO=(()=>{
+  const r=n=>Math.round(n*10)/10;
+  const frond=(x0,y0,cx,cy,x1,y1,n,L,cols)=>{let s=`<path d="M${x0} ${y0}Q${cx} ${cy} ${x1} ${y1}" fill="none" stroke="#2d6a1f" stroke-width="1.6" stroke-linecap="round"/>`;
+    for(let i=0;i<n;i++){const t=.18+.8*i/(n-1),u=1-t,px=u*u*x0+2*u*t*cx+t*t*x1,py=u*u*y0+2*u*t*cy+t*t*y1,tx=2*u*(cx-x0)+2*t*(x1-cx),ty=2*u*(cy-y0)+2*t*(y1-cy),tl=Math.hypot(tx,ty),a=Math.atan2(ty,tx),l=L*(1-.55*t);
+      [-1,1].forEach((sd,k)=>{const b=a+sd*.75,ex=px+Math.cos(b)*l,ey=py+Math.sin(b)*l,mx=(px+ex)/2,my=(py+ey)/2,nx=-Math.sin(b)*l*.22,ny=Math.cos(b)*l*.22;
+        s+=`<path d="M${r(px)} ${r(py)}Q${r(mx+nx)} ${r(my+ny)} ${r(ex)} ${r(ey)}Q${r(mx-nx)} ${r(my-ny)} ${r(px)} ${r(py)}Z" fill="${cols[(i+k)%2]}"/>`})}
+    return s};
+  const F="font-family=\"'Noto Sans Thai','Leelawadee UI',Tahoma,sans-serif\" font-weight=\"700\" fill=\"#fdf3d0\" text-anchor=\"middle\"";
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="88" height="88" viewBox="0 0 120 120"><defs>
+<radialGradient id="kpBg" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#f1e6c4"/></radialGradient>
+<radialGradient id="kpSun" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffd54f"/><stop offset=".6" stop-color="#ffca28" stop-opacity=".85"/><stop offset="1" stop-color="#ffca28" stop-opacity="0"/></radialGradient>
+<radialGradient id="kpFruit" cx="38%" cy="32%" r="70%"><stop offset="0" stop-color="#ffb74d"/><stop offset=".45" stop-color="#f4511e"/><stop offset="1" stop-color="#8e1b0e"/></radialGradient>
+<clipPath id="kpIn"><circle cx="60" cy="60" r="39"/></clipPath>
+<path id="kpTop" d="M17 60A43 43 0 0 1 103 60"/><path id="kpBot" d="M11 60A49 49 0 0 0 109 60"/></defs>
+<circle cx="60" cy="60" r="59" fill="#d4a017"/><circle cx="60" cy="60" r="57" fill="#14532d"/>
+<circle cx="60" cy="60" r="54.5" fill="none" stroke="#d4a017" stroke-width=".8"/>
+<text ${F} font-size="11" letter-spacing=".3"><textPath href="#kpTop" startOffset="50%">โกเพียวพันธุ์ปาล์ม</textPath></text>
+<text ${F} font-size="8.5" letter-spacing="1.2"><textPath href="#kpBot" startOffset="50%">ต้นกล้าพันธุ์ดี</textPath></text>
+<path d="M12 57.5l1.6 1.6l-1.6 1.6l-1.6-1.6zM108 57.5l1.6 1.6l-1.6 1.6l-1.6-1.6z" fill="#d4a017"/>
+<circle cx="60" cy="60" r="40.5" fill="#d4a017"/><circle cx="60" cy="60" r="39" fill="url(#kpBg)"/>
+<g clip-path="url(#kpIn)"><circle cx="60" cy="60" r="27" fill="url(#kpSun)"/>
+${[...Array(9)].map((_,i)=>{const a=Math.PI*(1+i/8);return `<path d="M${r(60+Math.cos(a)*23)} ${r(62+Math.sin(a)*23)}L${r(60+Math.cos(a)*33)} ${r(62+Math.sin(a)*33)}" stroke="#f9b233" stroke-width="2" stroke-linecap="round" opacity=".6"/>`}).join("")}
+<path d="M18 86Q40 77 60 82T102 84V102H18Z" fill="#6d3f1d"/><path d="M18 91Q42 84 60 88T102 90" fill="none" stroke="#8d5a2b" stroke-width="1.6"/></g>
+<path d="M60 80Q58.5 70 60 60" fill="none" stroke="#2d6a1f" stroke-width="3.2" stroke-linecap="round"/>
+${frond(60,62,46,48,30,52,8,15,["#2e7d32","#43a047"])}${frond(60,62,74,48,90,52,8,15,["#43a047","#2e7d32"])}
+${frond(60,61,51,42,43,30,8,13,["#4caf50","#66bb6a"])}${frond(60,61,69,42,77,30,8,13,["#66bb6a","#4caf50"])}
+<path d="M60 62C55 50 56 34 60 22C64 34 65 50 60 62Z" fill="#7cb342"/><path d="M60 58V27" stroke="#c5e1a5" stroke-width=".9"/>
+${[[52,83,5.2],[68,83,5.2],[56,79,5.6],[64,79,5.6],[60,84,6]].map(([x,y,s])=>`<circle cx="${x}" cy="${y}" r="${s}" fill="url(#kpFruit)" stroke="#5d1208" stroke-width=".5"/><ellipse cx="${x-1.6}" cy="${y-1.9}" rx="1.6" ry="1.1" fill="#fff3e0" opacity=".7"/>`).join("")}
+</svg>`})();
 function bookingDocHtml(b,copyNo){
   const lot=b.lot?bucketLabel(b.lot+"|"+b.varietyId):vName(b.varietyId);const now=new Date();
   const row=(k,v)=>`<tr><td style="padding:7px 0;color:#615d59;width:150px">${k}</td><td style="padding:7px 0;font-weight:500">${v}</td></tr>`;
