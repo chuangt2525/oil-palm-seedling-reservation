@@ -216,7 +216,7 @@ function renderList(){
       <td>${esc(b.customer)}${b.docNo?`<div class="small" style="color:var(--primary);font-weight:600">${esc(b.docNo)}${b.printCount?` · พิมพ์ ${fmt(b.printCount)} ครั้ง`:""}</div>`:""}${b.phone?`<div class="small muted">${esc(b.phone)}</div>`:""}${b.note?`<div class="small muted">${esc(b.note)}</div>`:""}</td>
       ${itemCells(b)}<td>${thDate(b.pickupDate)}</td>
       <td><span class="pill st-${b.status}">${STATUS[b.status]||b.status}</span></td>
-      <td><div class="actions"><button class="btn sm ghost" data-bpdf="${esc(b.id)}" type="button">${b.docNo?"พิมพ์ซ้ำ (เลขเดิม)":"พิมพ์ใบจอง PDF"}</button>${canWrite?statusButtons(b):""}</div></td></tr>`).join("")}</tbody></table></div>`}).join("");
+      <td><div class="actions"><button class="btn sm ghost" data-bview="${esc(b.id)}" type="button">ดูใบจอง</button><button class="btn sm ghost" data-bpdf="${esc(b.id)}" type="button">${b.docNo?"พิมพ์ซ้ำ (เลขเดิม)":"พิมพ์ใบจอง PDF"}</button>${canWrite?statusButtons(b):""}</div></td></tr>`).join("")}</tbody></table></div>`}).join("");
   cardify();renderDocResult();
 }
 /* ช่อง Lot / สายพันธุ์ และจำนวน: หลายรายการแสดงบรรทัดละรายการพร้อมยอดรวม */
@@ -277,7 +277,7 @@ try{const t=localStorage.getItem("palmTab");if(t){const b=document.querySelector
 
 ["#b_var","#b_qty"].forEach(s=>$(s).addEventListener("input",()=>renderBookCheck(calc())));
 $("#lotPick").addEventListener("click",e=>{const b=e.target.closest(".lot");if(!b||b.disabled)return;$("#b_var").value=b.dataset.key;renderBookCheck(calc());$("#b_qty").focus({preventScroll:true})});
-$("#b_lastpdf").addEventListener("click",()=>{if(lastBooked)bookingPdf(lastBooked,$("#b_msg"))});
+$("#b_lastpdf").addEventListener("click",()=>{if(lastBooked)showDoc(lastBooked)});
 $("#checkBox").addEventListener("click",e=>{if(e.target.id==="useMax"){$("#b_qty").value=Math.max(0,checkAvail($("#b_var").value,0,cart).avail);renderBookCheck(calc())}});
 /* ใบจองหลายรายการ: เลือก Lot + จำนวน แล้วกด "เพิ่มรายการ" ซ้ำได้ · รายการที่เลือกค้างไว้ (จองได้) จะถูกรวมตอนบันทึกด้วย */
 let cart=[];
@@ -293,7 +293,7 @@ $("#bookForm").addEventListener("submit",async e=>{e.preventDefault();const m=$(
   if(!itemsFit(items)){flash(m,"ยอดคงเหลือเปลี่ยนไปแล้ว ตรวจสอบจำนวนในใบจองนี้อีกครั้ง");return}
   const total=items.reduce((s,i)=>s+i.qty,0);
   try{const nid=uid();await save("bookings",nid,{date:$("#b_date").value,items,qty:total,customer:$("#b_cust").value.trim(),phone:$("#b_phone").value.trim(),pickupDate:$("#b_pick").value,note:$("#b_note").value.trim(),status:"reserved",createdAt:new Date().toISOString()});
-    flash(m,`บันทึกการจอง ${items.length>1?fmt(items.length)+" รายการ รวม ":""}${fmt(total)} ต้นแล้ว`,true);lastBooked=nid;$("#b_lastpdf").hidden=false;cart=[];$("#b_var").value="";["#b_qty","#b_cust","#b_phone","#b_note","#b_pick"].forEach(s=>$(s).value="");renderBookCheck(calc())}
+    flash(m,`บันทึกการจอง ${items.length>1?fmt(items.length)+" รายการ รวม ":""}${fmt(total)} ต้นแล้ว`,true);lastBooked=nid;$("#b_lastpdf").hidden=false;cart=[];$("#b_var").value="";["#b_qty","#b_cust","#b_phone","#b_note","#b_pick"].forEach(s=>$(s).value="");renderBookCheck(calc());showDoc(nid)}
   catch(err){flash(m,errText(err))}});
 
 ["#l_date","#l_var","#l_st","#l_q"].forEach(s=>$(s).addEventListener("input",renderList));
@@ -319,7 +319,7 @@ function renderDocResult(){
       ${row("พิมพ์ใบจอง",fmt(b.printCount||0)+" ครั้ง")}${row("พิมพ์ครั้งแรก / ล่าสุด",dt(b.firstPrintedAt)+" / "+dt(b.lastPrintedAt))}
       ${row("หมายเหตุ",esc(b.note||"-"))}
     </div>
-    <div class="actions" style="margin-top:12px"><button class="btn sm ghost" type="button" data-bpdf="${esc(b.id)}">พิมพ์ซ้ำ (เลขเดิม)</button>${canWrite?statusButtons(b):""}</div>
+    <div class="actions" style="margin-top:12px"><button class="btn sm ghost" type="button" data-bview="${esc(b.id)}">ดูใบจอง</button><button class="btn sm ghost" type="button" data-bpdf="${esc(b.id)}">พิมพ์ซ้ำ (เลขเดิม)</button>${canWrite?statusButtons(b):""}</div>
   </div>`;
 }
 $("#docSearch").addEventListener("submit",e=>{e.preventDefault();docQuery=$("#d_no").value.trim();renderDocResult()});
@@ -330,6 +330,7 @@ $("#docResult").addEventListener("click",e=>{const b=e.target.closest("button");
 const armed=new Set();
 function twoStep(btn,key){if(armed.has(key))return true;armed.add(key);const t=btn.textContent;btn.textContent="ยืนยันลบ?";setTimeout(()=>{armed.delete(key);if(btn.isConnected)btn.textContent=t},3000);return false}
 async function bookAction(b){if(!b)return;
+  if(b.dataset.bview){showDoc(b.dataset.bview);return}
   if(b.dataset.bpdf){bookingPdf(b.dataset.bpdf,b);return}
   try{if(b.dataset.bst){const bk=S.bookings.find(x=>x.id===b.dataset.id);
       if(b.dataset.bst==="reserved"&&bk&&!itemsFit(itemsOf(bk))){b.textContent="ยอดไม่พอ";return}
@@ -474,6 +475,18 @@ async function bookingPdf(id,el){
     say("สร้าง PDF ไม่สำเร็จ")}
   finally{host.remove()}
 }
+/* ดูใบจองบนจอ: แสดงหน้าเดียวกับ PDF ย่อให้พอดีจอ · ใบที่ยังไม่เคยพิมพ์ยังไม่มีเลขที่ (ออกเลขตอนพิมพ์ PDF ครั้งแรก) */
+let dlgId=null;
+function docPaper(b){$("#docPaper").innerHTML=`<div class="paper">${bookingDocHtml({...b,docNo:b.docNo||"(ออกเลขเมื่อพิมพ์ PDF)"},(+b.printCount||0)+1)}</div>`;fitDoc()}
+function fitDoc(){const w=$("#docPaper"),p=w.querySelector(".paper");if(!p||!$("#docDlg").open)return;const s=Math.min(1,w.clientWidth/794);p.style.transform=`scale(${s})`;w.style.height=p.offsetHeight*s+"px"}
+function showDoc(id){const b=S.bookings.find(x=>x.id===id);if(!b)return;dlgId=id;
+  $("#docDlgTitle").textContent=b.docNo?"ใบจอง "+b.docNo:"ใบจอง · "+(b.customer||"");$("#dlg_pdf").textContent=b.docNo?"พิมพ์ซ้ำ (เลขเดิม)":"พิมพ์ใบจอง PDF";
+  const d=$("#docDlg");if(!d.open)d.showModal();docPaper(b)}
+addEventListener("resize",fitDoc);
+$("#dlg_close").addEventListener("click",()=>$("#docDlg").close());
+$("#docDlg").addEventListener("click",e=>{if(e.target===e.currentTarget)e.currentTarget.close()});
+$("#dlg_pdf").addEventListener("click",async e=>{const btn=e.currentTarget,id=dlgId;if(!id)return;await bookingPdf(id,btn);
+  const b=S.bookings.find(x=>x.id===id);if(b&&b.docNo&&dlgId===id&&$("#docDlg").open){$("#docDlgTitle").textContent="ใบจอง "+b.docNo;if(btn.textContent==="พิมพ์ใบจอง PDF")btn.textContent="พิมพ์ซ้ำ (เลขเดิม)";docPaper(b)}});
 /* ---------- boot ---------- */
 $("#b_date").value=today();$("#p_date").value=today();$("#p_lot").innerHTML=lotOptions(lotOfDate(today()));
 $("#p_date").addEventListener("change",syncFromPond);

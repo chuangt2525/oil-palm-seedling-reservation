@@ -83,7 +83,7 @@
         <label>เบอร์โทร<input id="b_phone" inputmode="tel" autocomplete="tel"></label>
         <label>วันที่นัดรับ<input type="date" id="b_pick"></label>
         <label>หมายเหตุ<input id="b_note"></label>
-        <div class="full actions submitbar"><button class="btn" id="b_submit" type="submit">บันทึกการจอง</button><button class="btn ghost" id="b_lastpdf" type="button" hidden>พิมพ์ใบจอง PDF</button><span class="msg" id="b_msg"></span></div>
+        <div class="full actions submitbar"><button class="btn" id="b_submit" type="submit">บันทึกการจอง</button><button class="btn ghost" id="b_lastpdf" type="button" hidden>ดูใบจอง</button><span class="msg" id="b_msg"></span></div>
       </form>
     </div>
     <div class="panel"><h2>ยอดคงเหลือทุก Lot</h2><div class="tblwrap" id="availMini"></div></div>
@@ -166,6 +166,10 @@
 </div><!-- /appView -->
 </div>
 
+<dialog class="docdlg" id="docDlg" aria-labelledby="docDlgTitle">
+  <div class="dlghead"><b id="docDlgTitle">ใบจอง</b><div class="actions"><button class="btn" id="dlg_pdf" type="button">พิมพ์ใบจอง PDF</button><button class="btn ghost" id="dlg_close" type="button">ปิด</button></div></div>
+  <div class="dlgbody"><div class="paperwrap" id="docPaper"></div></div>
+</dialog>
 <script src="assets/config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>

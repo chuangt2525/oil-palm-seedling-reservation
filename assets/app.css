@@ -186,3 +186,9 @@ nav.tabs .s{display:none}
   .submitbar .btn{white-space:nowrap}
   .submitbar .msg{flex:1 1 100%}
 }
+.docdlg{width:min(860px,calc(100vw - 24px));max-width:none;max-height:calc(100vh - 24px);padding:0;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);overflow:auto}
+.docdlg::backdrop{background:rgba(0,0,0,.45)}
+.docdlg .dlghead{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
+.docdlg .dlgbody{padding:16px}
+.paperwrap{width:100%;overflow:hidden}
+.paperwrap .paper{width:794px;transform-origin:0 0;box-shadow:0 1px 4px rgba(0,0,0,.18)}
