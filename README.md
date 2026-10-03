@@ -51,7 +51,7 @@ Supabase project: `oil-palm-seedling-reservation` (ref `naiyampjitchsygixcyq`, r
 | `varieties` | สายพันธุ์ | `name` (ไม่ซ้ำ), `adjust` = ยอดปรับ |
 | `ponds` | แปลงเพาะปลูก | `name` (ไม่ซ้ำ), `lot` L1/L2, `capacity`, `variety_id` |
 | `plantings` | บันทึกการเพาะรายวัน | `lot` (เช่น `2026-L2`), `date`, `pond_id`, `variety_id`, `qty`, `culled` |
-| `bookings` | การจอง | `doc_no`, `date`, `lot`, `variety_id`, `qty`, `customer`, `phone`, `pickup_date`, `status`, `print_count` |
+| `bookings` | การจอง (1 ใบมีได้หลาย Lot / สายพันธุ์) | `doc_no`, `date`, `items` (jsonb `[{lot, variety_id, qty}]`), `qty` (ยอดรวม), `customer`, `phone`, `pickup_date`, `status`, `print_count` |
 | `staff` | รายชื่อผู้มีสิทธิ์ใช้ระบบ | `user_id`, `email`, `role` = `editor` / `viewer` |
 
 กฎที่ฐานข้อมูลบังคับเอง (กันข้อมูลผิดแม้หลายคนกดพร้อมกัน):
