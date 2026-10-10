@@ -68,20 +68,22 @@
 <section id="tab-book" hidden>
   <div class="grid2">
     <div class="panel">
-      <h2>บันทึกการจอง</h2>
+      <h2 id="b_title">บันทึกการจอง</h2>
+      <div class="editbar" id="b_editbar" hidden><span>กำลังแก้ไขใบจองเดิม — บันทึกแล้วเลขที่ใบจองไม่เปลี่ยน</span><button class="btn sm ghost" id="b_editcancel" type="button">ยกเลิกการแก้ไข</button></div>
       <div class="step">1 · เลือก Lot / สายพันธุ์ <span class="muted">(จองได้หลายสายพันธุ์ในใบเดียว)</span></div>
       <div class="lotpick" id="lotPick" role="radiogroup" aria-label="เลือก Lot / สายพันธุ์"></div>
       <select id="b_var" hidden aria-hidden="true"></select>
       <div class="step">2 · ระบุจำนวนและผู้จอง</div>
       <form class="f" id="bookForm" autocomplete="off">
         <label>จำนวน (ต้น)<input type="number" id="b_qty" min="1" step="1" inputmode="numeric"></label>
+        <label>ราคาต่อต้น (บาท)<input type="number" id="b_price" min="0" step="0.01" inputmode="decimal" placeholder="ไม่ระบุ"></label>
         <label>วันที่จอง<input type="date" id="b_date" required></label>
         <div class="full check" id="checkBox"></div>
         <div class="full actions"><button class="btn ghost" id="b_add" type="button" disabled>+ เพิ่มรายการ แล้วเลือกสายพันธุ์อื่น</button></div>
         <div class="full" id="cart" hidden></div>
         <label>ชื่อผู้จอง<input id="b_cust" required autocomplete="name"></label>
         <label>เบอร์โทร<input id="b_phone" inputmode="tel" autocomplete="tel"></label>
-        <label>วันที่นัดรับ<input type="date" id="b_pick"></label>
+        <label>วันที่รับ<input type="date" id="b_pick"></label>
         <label>หมายเหตุ<input id="b_note"></label>
         <div class="full actions submitbar"><button class="btn" id="b_submit" type="submit">บันทึกการจอง</button><button class="btn ghost" id="b_lastpdf" type="button" hidden>ดูใบจอง</button><span class="msg" id="b_msg"></span></div>
       </form>
