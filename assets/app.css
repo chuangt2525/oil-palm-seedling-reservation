@@ -63,6 +63,7 @@ td.r,th.r{text-align:right}
 .st-reserved{background:var(--orange-soft);color:var(--orange)}
 .st-confirmed{background:var(--primary-soft);color:var(--primary)}
 .st-delivered{background:var(--green-soft);color:var(--green)}
+.st-returned{background:var(--orange-soft);color:var(--orange)}
 .st-cancelled{background:var(--red-soft);color:var(--red);text-decoration:line-through}
 form.f{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
 label{display:flex;flex-direction:column;gap:6px;font:500 13px var(--f);color:var(--ink2)}
@@ -79,6 +80,8 @@ select:disabled{background:var(--bg);color:var(--muted)}
 .btn.sm{padding:3px 12px;font-size:13px;border-radius:8px}
 .btn.danger{border-color:var(--line);background:var(--surface);color:var(--red)}
 .btn.danger:hover{background:var(--red-soft)}
+.btn.warn{border-color:var(--line);background:var(--surface);color:var(--orange)}
+.btn.warn:hover{background:var(--orange-soft)}
 .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .check{border-radius:12px;padding:20px 24px;border:1px solid var(--line);background:var(--surface)}
 .check.yes{box-shadow:inset 3px 0 0 var(--green)} .check.no{box-shadow:inset 3px 0 0 var(--red);background:var(--red-soft)}

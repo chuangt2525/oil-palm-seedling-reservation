@@ -4,7 +4,9 @@ const S={varieties:[],ponds:[],plantings:[],bookings:[]};
 const COLLS=Object.keys(S);
 const CFG=window.APP_CONFIG||{};
 let sb=null, session=null, chan=null, canWrite=true, live=false;
-const STATUS={reserved:"จอง",confirmed:"ยืนยัน",delivered:"ส่งมอบแล้ว",cancelled:"ยกเลิก"};
+const STATUS={reserved:"จอง",confirmed:"ยืนยัน",delivered:"ส่งมอบแล้ว",returned:"รับคืนแล้ว",cancelled:"ยกเลิก"};
+/* ใบจองที่ยังกันยอดไว้ · ยกเลิก / รับคืนแล้ว คืนยอดกลับเป็นคงเหลือจองได้ */
+const holds=b=>b.status!=="cancelled"&&b.status!=="returned";
 
 /* ---------- utils ---------- */
 const pad=n=>String(n).padStart(2,"0");
@@ -32,7 +34,7 @@ function calc(){
   const blank=()=>({adjust:0,planted:0,culled:0,net:0,booked:0,delivered:0,pending:0,available:0,rate:0});
   S.varieties.forEach(v=>{byVar[v.id]=blank();byVar[v.id].adjust=+v.adjust||0});
   S.plantings.forEach(p=>{const r=byVar[p.varietyId]||(byVar[p.varietyId]=blank());r.planted+=+p.qty||0;r.culled+=+p.culled||0});
-  S.bookings.forEach(b=>{if(b.status==="cancelled")return;itemsOf(b).forEach(i=>{const r=byVar[i.varietyId]||(byVar[i.varietyId]=blank()),q=+i.qty||0;
+  S.bookings.forEach(b=>{if(!holds(b))return;itemsOf(b).forEach(i=>{const r=byVar[i.varietyId]||(byVar[i.varietyId]=blank()),q=+i.qty||0;
     r.booked+=q; if(b.status==="delivered")r.delivered+=q; else r.pending+=q})});
   const tot=blank();
   for(const k in byVar){const r=byVar[k];r.net=Math.max(0,r.planted-r.culled+r.adjust);r.available=r.net-r.booked;r.rate=pct(r.booked,r.net);
@@ -45,7 +47,7 @@ function calc(){
   for(const k in byPond){const r=byPond[k];r.net=Math.max(0,r.planted-r.culled)}
   const byBucket={};const bb=(lot,v)=>{const k=lot+"|"+v;return byBucket[k]||(byBucket[k]={key:k,lot,varietyId:v,planted:0,culled:0,net:0,booked:0,delivered:0,pending:0,available:0,rate:0})};
   S.plantings.forEach(p=>{const r=bb(lotKey(p),p.varietyId);r.planted+=+p.qty||0;r.culled+=+p.culled||0});
-  S.bookings.forEach(b=>{if(b.status==="cancelled")return;itemsOf(b).forEach(i=>{if(!i.lot)return;const r=bb(i.lot,i.varietyId),q=+i.qty||0;r.booked+=q;if(b.status==="delivered")r.delivered+=q;else r.pending+=q})});
+  S.bookings.forEach(b=>{if(!holds(b))return;itemsOf(b).forEach(i=>{if(!i.lot)return;const r=bb(i.lot,i.varietyId),q=+i.qty||0;r.booked+=q;if(b.status==="delivered")r.delivered+=q;else r.pending+=q})});
   for(const k in byBucket){const r=byBucket[k];r.net=Math.max(0,r.planted-r.culled);r.available=r.net-r.booked;r.rate=pct(r.booked,r.net)}
   return {byVar,tot,byPond,byBucket};
 }
@@ -60,7 +62,7 @@ function checkAvail(key,qty,held){
   const avail=availFor(calc(),key,held);
   return {avail, ok:qty>0&&qty<=avail, after:avail-(qty||0), short:Math.max(0,(qty||0)-avail)};
 }
-/* ทุกรายการในใบจองยังจองได้พร้อมกันหรือไม่ (ใช้ตอนคืนสถานะใบที่ยกเลิก) */
+/* ทุกรายการในใบจองยังจองได้พร้อมกันหรือไม่ (ใช้ตอนคืนสถานะใบที่ยกเลิก / รับคืนแล้ว) */
 function itemsFit(items){const C=calc();return items.every((it,k)=>{const prev=items.slice(0,k),q=+it.qty||0;
   if(it.lot)return q>0&&q<=availFor(C,it.lot+"|"+it.varietyId,prev);
   const v=C.byVar[it.varietyId];return !!v&&q>0&&q<=v.available-prev.filter(p=>p.varietyId===it.varietyId).reduce((s,p)=>s+(+p.qty||0),0)})}
@@ -159,9 +161,9 @@ function dailyChart(){
   const end=today(), days=[];for(let i=13;i>=0;i--)days.push(addDays(end,-i));
   const plant={},book={};days.forEach(d=>{plant[d]=0;book[d]=0});
   S.plantings.forEach(p=>{if(p.date in plant)plant[p.date]+=Math.max(0,(+p.qty||0)-(+p.culled||0))});
-  S.bookings.forEach(b=>{if(b.status!=="cancelled"&&b.date in book)book[b.date]+=bQty(b)});
+  S.bookings.forEach(b=>{if(holds(b)&&b.date in book)book[b.date]+=bQty(b)});
   // cumulative rate up to each day (all history)
-  const cum=days.map(d=>{let n=0,k=0;S.plantings.forEach(p=>{if(p.date<=d)n+=Math.max(0,(+p.qty||0)-(+p.culled||0))});S.bookings.forEach(b=>{if(b.status!=="cancelled"&&b.date<=d)k+=bQty(b)});return n?Math.min(150,k/n*100):0});
+  const cum=days.map(d=>{let n=0,k=0;S.plantings.forEach(p=>{if(p.date<=d)n+=Math.max(0,(+p.qty||0)-(+p.culled||0))});S.bookings.forEach(b=>{if(holds(b)&&b.date<=d)k+=bQty(b)});return n?Math.min(150,k/n*100):0});
   const mx=Math.max(1,...days.map(d=>Math.max(plant[d],book[d])));
   const step=Math.pow(10,Math.floor(Math.log10(mx)));const top=Math.ceil(mx/step)*step;
   const W=560,H=240,L=44,R=40,T=14,B=34,cw=(W-L-R)/days.length,ih=H-T-B;
@@ -210,7 +212,7 @@ function renderList(){
   $("#l_count").textContent=`${fmt(rows.length)} รายการ`;
   if(!rows.length){$("#bookList").innerHTML=`<div class="empty" style="margin-top:12px">${S.bookings.length?"ไม่พบรายการตามตัวกรอง":"ยังไม่มีการจอง — บันทึกการจองแรกได้ที่แท็บ “ตรวจสอบ &amp; จอง”"}</div>`;return}
   const groups={};rows.forEach(b=>(groups[b.date]=groups[b.date]||[]).push(b));
-  $("#bookList").innerHTML=Object.keys(groups).sort().reverse().map(d=>{const g=groups[d];const act=g.filter(b=>b.status!=="cancelled");
+  $("#bookList").innerHTML=Object.keys(groups).sort().reverse().map(d=>{const g=groups[d];const act=g.filter(holds);
     return `<div class="dayhead"><b>${thDate(d,true)}</b><span>${fmt(g.length)} รายการ · จองรวม <span class="num">${fmt(act.reduce((s,b)=>s+bQty(b),0))}</span> ต้น</span></div>
     <div class="tblwrap"><table><thead><tr><th>ผู้จอง</th><th>Lot / สายพันธุ์</th><th class="r">จำนวน</th><th>นัดรับ</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>${g.map(b=>`<tr>
       <td>${esc(b.customer)}${b.docNo?`<div class="small" style="color:var(--primary);font-weight:600">${esc(b.docNo)}${b.printCount?` · พิมพ์ ${fmt(b.printCount)} ครั้ง`:""}</div>`:""}${b.phone?`<div class="small muted">${esc(b.phone)}</div>`:""}${b.note?`<div class="small muted">${esc(b.note)}</div>`:""}</td>
@@ -227,6 +229,8 @@ function statusButtons(b){
   const btn=(st,l,cls)=>`<button class="btn sm ${cls||"ghost"}" data-bst="${st}" data-id="${esc(b.id)}" type="button">${l}</button>`;
   if(b.status==="reserved")return btn("confirmed","ยืนยัน")+btn("cancelled","ยกเลิก","danger");
   if(b.status==="confirmed")return btn("delivered","ส่งมอบ")+btn("cancelled","ยกเลิก","danger");
+  if(b.status==="delivered")return btn("returned","รับคืน (คืนยอด)","warn");
+  if(b.status==="returned")return btn("delivered","คืนสถานะส่งมอบ");
   if(b.status==="cancelled")return btn("reserved","คืนสถานะ")+`<button class="btn sm danger" data-bdel="${esc(b.id)}" type="button">ลบ</button>`;
   return "";
 }
@@ -328,12 +332,13 @@ $("#docResult").addEventListener("click",e=>{const b=e.target.closest("button");
   if(b.dataset.dpick){$("#d_no").value=b.dataset.dpick;docQuery=b.dataset.dpick;renderDocResult();return}
   $("#bookList").dispatchEvent(new CustomEvent("docaction",{detail:b}))});
 const armed=new Set();
-function twoStep(btn,key){if(armed.has(key))return true;armed.add(key);const t=btn.textContent;btn.textContent="ยืนยันลบ?";setTimeout(()=>{armed.delete(key);if(btn.isConnected)btn.textContent=t},3000);return false}
+function twoStep(btn,key,ask){if(armed.has(key))return true;armed.add(key);const t=btn.textContent;btn.textContent=ask||"ยืนยันลบ?";setTimeout(()=>{armed.delete(key);if(btn.isConnected)btn.textContent=t},3000);return false}
 async function bookAction(b){if(!b)return;
   if(b.dataset.bview){showDoc(b.dataset.bview);return}
   if(b.dataset.bpdf){bookingPdf(b.dataset.bpdf,b);return}
   try{if(b.dataset.bst){const bk=S.bookings.find(x=>x.id===b.dataset.id);
-      if(b.dataset.bst==="reserved"&&bk&&!itemsFit(itemsOf(bk))){b.textContent="ยอดไม่พอ";return}
+      if(bk&&!holds(bk)&&!itemsFit(itemsOf(bk))){b.textContent="ยอดไม่พอ";return}
+      if(b.dataset.bst==="returned"&&!twoStep(b,"r"+b.dataset.id,`ยืนยันรับคืน ${fmt(bk?bQty(bk):0)} ต้น?`))return;
       await patch("bookings",b.dataset.id,{status:b.dataset.bst})}
     else if(b.dataset.bdel&&twoStep(b,"b"+b.dataset.bdel))await remove("bookings",b.dataset.bdel)}
   catch(err){b.textContent="ไม่สำเร็จ";b.title=errText(err)}}
