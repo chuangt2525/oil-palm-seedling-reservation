@@ -225,7 +225,7 @@ function renderList(){
       <td>${esc(b.customer)}${b.docNo?`<div class="small" style="color:var(--primary);font-weight:600">${esc(b.docNo)}${b.printCount?` · พิมพ์ ${fmt(b.printCount)} ครั้ง`:""}</div>`:""}${b.phone?`<div class="small muted">${esc(b.phone)}</div>`:""}${b.note?`<div class="small muted">${esc(b.note)}</div>`:""}</td>
       ${itemCells(b)}<td>${thDate(b.pickupDate)}</td>
       <td><span class="pill st-${b.status}">${STATUS[b.status]||b.status}</span></td>
-      <td><div class="actions"><button class="btn sm ghost" data-bview="${esc(b.id)}" type="button">ดูใบจอง</button><button class="btn sm ghost" data-bpdf="${esc(b.id)}" type="button">${b.docNo?"พิมพ์ซ้ำ (เลขเดิม)":"พิมพ์ใบจอง PDF"}</button>${canWrite?editButton(b)+statusButtons(b):""}</div></td></tr>`).join("")}</tbody></table></div>`}).join("");
+      <td><div class="actions"><button class="btn sm ghost" data-bview="${esc(b.id)}" type="button">ดูใบจอง</button><button class="btn sm ghost" data-bpdf="${esc(b.id)}" type="button">${b.docNo?"พิมพ์ซ้ำ (เลขเดิม)":"พิมพ์ใบจอง PDF"}</button>${receiptButton(b)}${canWrite?editButton(b)+statusButtons(b):""}</div></td></tr>`).join("")}</tbody></table></div>`}).join("");
   cardify();renderDocResult();
 }
 /* ช่อง Lot / สายพันธุ์ และจำนวน: หลายรายการแสดงบรรทัดละรายการพร้อมยอดรวม */
@@ -233,6 +233,7 @@ function itemCells(b){const its=itemsOf(b),am=i=>hasPrice(i)?money(amt(i)):"-",t
   if(its.length<2)return `<td>${its.length?esc(itemLabel(its[0])):"-"}</td><td class="r num">${fmt(bQty(b))}</td><td class="r num">${tot}${its[0]&&hasPrice(its[0])?`<div class="small muted">ต้นละ ${money(its[0].price)}</div>`:""}</td>`;
   return `<td><div class="items">${its.map(i=>`<div>${esc(itemLabel(i))}</div>`).join("")}<div class="itot">รวม ${fmt(its.length)} รายการ</div></div></td><td class="r num"><div class="items">${its.map(i=>`<div>${fmt(i.qty)}</div>`).join("")}<div class="itot">${fmt(bQty(b))}</div></div></td><td class="r num"><div class="items">${its.map(i=>`<div>${am(i)}</div>`).join("")}<div class="itot">${tot}</div></div></td>`}
 /* ใบจองที่ออกเลขที่แล้วแก้ไขรายการได้ (บันทึกทับใบเดิม เลขที่ไม่เปลี่ยน) */
+function receiptButton(b){return b.status==="reserved"||b.status==="confirmed"?`<button class="btn sm ghost" data-brc="${esc(b.id)}" type="button">พิมพ์ใบเสร็จ</button>`:""}
 function editButton(b){return b.docNo&&holds(b)?`<button class="btn sm ghost" data-bedit="${esc(b.id)}" type="button">แก้ไข</button>`:""}
 function statusButtons(b){
   const btn=(st,l,cls)=>`<button class="btn sm ${cls||"ghost"}" data-bst="${st}" data-id="${esc(b.id)}" type="button">${l}</button>`;
@@ -343,7 +344,7 @@ function renderDocResult(){
       ${row("พิมพ์ใบจอง",fmt(b.printCount||0)+" ครั้ง")}${row("พิมพ์ครั้งแรก / ล่าสุด",dt(b.firstPrintedAt)+" / "+dt(b.lastPrintedAt))}
       ${row("หมายเหตุ",esc(b.note||"-"))}
     </div>
-    <div class="actions" style="margin-top:12px"><button class="btn sm ghost" type="button" data-bview="${esc(b.id)}">ดูใบจอง</button><button class="btn sm ghost" type="button" data-bpdf="${esc(b.id)}">พิมพ์ซ้ำ (เลขเดิม)</button>${canWrite?editButton(b)+statusButtons(b):""}</div>
+    <div class="actions" style="margin-top:12px"><button class="btn sm ghost" type="button" data-bview="${esc(b.id)}">ดูใบจอง</button><button class="btn sm ghost" type="button" data-bpdf="${esc(b.id)}">พิมพ์ซ้ำ (เลขเดิม)</button>${receiptButton(b)}${canWrite?editButton(b)+statusButtons(b):""}</div>
   </div>`;
 }
 $("#docSearch").addEventListener("submit",e=>{e.preventDefault();docQuery=$("#d_no").value.trim();renderDocResult()});
@@ -357,6 +358,7 @@ async function bookAction(b){if(!b)return;
   if(b.dataset.bview){showDoc(b.dataset.bview);return}
   if(b.dataset.bpdf){bookingPdf(b.dataset.bpdf,b);return}
   if(b.dataset.bedit){startEdit(b.dataset.bedit);return}
+  if(b.dataset.brc){receiptPdf(b.dataset.brc,b);return}
   try{if(b.dataset.bst){const bk=S.bookings.find(x=>x.id===b.dataset.id);
       if(bk&&!holds(bk)&&!itemsFit(itemsOf(bk))){b.textContent="ยอดไม่พอ";return}
       if(b.dataset.bst==="returned"&&!twoStep(b,"r"+b.dataset.id,`ยืนยันรับคืน ${fmt(bk?bQty(bk):0)} ต้น?`))return;
@@ -457,27 +459,35 @@ ${frond(60,61,51,42,43,30,8,13,["#4caf50","#66bb6a"])}${frond(60,61,69,42,77,30,
 <path d="M60 62C55 50 56 34 60 22C64 34 65 50 60 62Z" fill="#7cb342"/><path d="M60 58V27" stroke="#c5e1a5" stroke-width=".9"/>
 ${[[52,83,5.2],[68,83,5.2],[56,79,5.6],[64,79,5.6],[60,84,6]].map(([x,y,s])=>`<circle cx="${x}" cy="${y}" r="${s}" fill="url(#kpFruit)" stroke="#5d1208" stroke-width=".5"/><ellipse cx="${x-1.6}" cy="${y-1.9}" rx="1.6" ry="1.1" fill="#fff3e0" opacity=".7"/>`).join("")}
 </svg>`})();
-function bookingDocHtml(b,copyNo){
-  const its=itemsOf(b),pr=priced(its);const now=new Date();const td="padding:12px;border-bottom:1px solid #e6e6e6";
+/* จำนวนเงินเป็นตัวอักษร เช่น 22000 → สองหมื่นสองพันบาทถ้วน */
+function bahtText(n){const D=["","หนึ่ง","สอง","สาม","สี่","ห้า","หก","เจ็ด","แปด","เก้า"],P=["","สิบ","ร้อย","พัน","หมื่น","แสน"];
+  const words=(x,tail)=>{if(x>=1e6)return words(Math.floor(x/1e6),false)+"ล้าน"+words(x%1e6,true);const ds=String(x).split("").reverse();let s="";
+    for(let i=ds.length-1;i>=0;i--){const d=+ds[i];if(!d)continue;s+=i===1&&d===1?"สิบ":i===1&&d===2?"ยี่สิบ":i===0&&d===1&&(ds.length>1||tail)?"เอ็ด":D[d]+P[i]}return s};
+  const c=Math.round((+n||0)*100),bt=Math.floor(c/100),st=c%100;
+  return (bt?words(bt,false)+"บาท":st?"":"ศูนย์บาท")+(st?words(st,false)+"สตางค์":"ถ้วน")}
+/* ใบจอง และใบเสร็จรับเงิน (rc = {no}) ใช้แบบเดียวกัน */
+function bookingDocHtml(b,copyNo,rc){
+  const its=itemsOf(b),pr=!!rc||priced(its);const now=new Date();const td="padding:12px;border-bottom:1px solid #e6e6e6";
   const row=(k,v)=>`<tr><td style="padding:7px 0;color:#615d59;width:150px">${k}</td><td style="padding:7px 0;font-weight:500">${v}</td></tr>`;
   return `<div style="width:794px;min-height:1123px;padding:64px 64px 48px;background:#fff;color:#191918;font:15px/1.6 'Inter','Noto Sans Thai',sans-serif;letter-spacing:0;box-sizing:border-box;display:flex;flex-direction:column">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #191918;padding-bottom:18px">
-    <div><div style="font-size:13px;color:#615d59">Oil Palm Seedling Reservation System</div><div style="font-size:30px;font-weight:700;line-height:1.2">ใบจองต้นกล้าปาล์ม</div><div style="display:flex;align-items:center;gap:14px;margin-top:10px"><div><div style="font-size:18px;font-weight:700;color:#2e7d32;line-height:1.3">${SHOP.name}</div><div style="font-size:14px;color:#615d59">โทร. ${SHOP.phone}</div></div>${SHOP_LOGO}</div></div>
-    <div style="text-align:right;font-size:13px;color:#615d59"><div style="display:inline-block;margin-bottom:6px;padding:2px 10px;border-radius:5px;font-weight:600;${copyNo>1?"background:#fbecdf;color:#dd5b00":"background:#e6f1fb;color:#0075de"}">${copyNo>1?"สำเนา · พิมพ์ครั้งที่ "+copyNo:"ต้นฉบับ"}</div><br>เลขที่ใบจอง<div style="font-size:18px;font-weight:700;color:#191918">${esc(docNoOf(b))}</div>วันที่จอง ${thDate(b.date,true)}</div>
+    <div><div style="font-size:13px;color:#615d59">Oil Palm Seedling Reservation System</div><div style="font-size:30px;font-weight:700;line-height:1.2">${rc?"ใบเสร็จรับเงิน":"ใบจองต้นกล้าปาล์ม"}</div><div style="display:flex;align-items:center;gap:14px;margin-top:10px"><div><div style="font-size:18px;font-weight:700;color:#2e7d32;line-height:1.3">${SHOP.name}</div><div style="font-size:14px;color:#615d59">โทร. ${SHOP.phone}</div></div>${SHOP_LOGO}</div></div>
+    ${rc?`<div style="text-align:right;font-size:13px;color:#615d59"><div style="display:inline-block;margin-bottom:6px;padding:2px 10px;border-radius:5px;font-weight:600;background:#e3f4e6;color:#158f2f">ใบเสร็จรับเงิน</div><br>เลขที่ใบเสร็จ<div style="font-size:18px;font-weight:700;color:#191918">${esc(rc.no)}</div>วันที่ ${thDate(today(),true)}<br>อ้างอิงใบจอง ${esc(docNoOf(b))}</div>`
+    :`<div style="text-align:right;font-size:13px;color:#615d59"><div style="display:inline-block;margin-bottom:6px;padding:2px 10px;border-radius:5px;font-weight:600;${copyNo>1?"background:#fbecdf;color:#dd5b00":"background:#e6f1fb;color:#0075de"}">${copyNo>1?"สำเนา · พิมพ์ครั้งที่ "+copyNo:"ต้นฉบับ"}</div><br>เลขที่ใบจอง<div style="font-size:18px;font-weight:700;color:#191918">${esc(docNoOf(b))}</div>วันที่จอง ${thDate(b.date,true)}</div>`}
   </div>
-  <div style="margin-top:28px;font-weight:700;font-size:13px;color:#615d59">ข้อมูลผู้จอง</div>
-  <table style="border-collapse:collapse;width:100%">${row("ชื่อผู้จอง",esc(b.customer||"-"))}${row("เบอร์โทร",esc(b.phone||"-"))}${row("วันที่รับ",b.pickupDate?thDate(b.pickupDate,true):"-")}${row("สถานะ",STATUS[b.status]||b.status)}</table>
-  <div style="margin-top:24px;font-weight:700;font-size:13px;color:#615d59">รายการจอง</div>
+  <div style="margin-top:28px;font-weight:700;font-size:13px;color:#615d59">${rc?"ข้อมูลลูกค้า":"ข้อมูลผู้จอง"}</div>
+  <table style="border-collapse:collapse;width:100%">${row(rc?"ได้รับเงินจาก":"ชื่อผู้จอง",esc(b.customer||"-"))}${row("เบอร์โทร",esc(b.phone||"-"))}${row("วันที่รับ",b.pickupDate?thDate(b.pickupDate,true):"-")}${rc?"":row("สถานะ",STATUS[b.status]||b.status)}</table>
+  <div style="margin-top:24px;font-weight:700;font-size:13px;color:#615d59">${rc?"รายการ":"รายการจอง"}</div>
   <table style="border-collapse:collapse;width:100%;margin-top:8px">
     <tr style="background:#f6f5f4"><th style="text-align:left;padding:10px 12px;font-size:13px">ลำดับ</th><th style="text-align:left;padding:10px 12px;font-size:13px">รายการ</th><th style="text-align:left;padding:10px 12px;font-size:13px">Lot / สายพันธุ์</th><th style="text-align:right;padding:10px 12px;font-size:13px">จำนวน (ต้น)</th>${pr?`<th style="text-align:right;padding:10px 12px;font-size:13px">ราคา/ต้น</th><th style="text-align:right;padding:10px 12px;font-size:13px">จำนวนเงิน (บาท)</th>`:""}</tr>
     ${its.map((i,k)=>`<tr><td style="${td}">${k+1}</td><td style="${td}">ต้นกล้าปาล์มน้ำมัน สายพันธุ์ ${esc(vName(i.varietyId))}</td><td style="${td}">${esc(i.lot?bucketLabel(i.lot+"|"+i.varietyId):vName(i.varietyId))}</td><td style="${td};text-align:right;font-weight:600">${fmt(i.qty)}</td>${pr?`<td style="${td};text-align:right">${hasPrice(i)?money(i.price):"-"}</td><td style="${td};text-align:right;font-weight:600">${hasPrice(i)?money(amt(i)):"-"}</td>`:""}</tr>`).join("")}
     <tr><td colspan="3" style="padding:12px;text-align:right;font-weight:700">รวมทั้งสิ้น${its.length>1?` ${fmt(its.length)} รายการ`:""}</td><td style="padding:12px;text-align:right;font-weight:700;font-size:18px;white-space:nowrap">${fmt(bQty(b))} ต้น</td>${pr?`<td></td><td style="padding:12px;text-align:right;font-weight:700;font-size:18px;white-space:nowrap">${money(itemsAmt(its))} บาท</td>`:""}</tr>
-  </table>
+  </table>${rc?`<div style="margin-top:4px;padding:10px 12px;background:#f6f5f4;border-radius:6px;display:flex;justify-content:space-between;gap:16px"><span style="color:#615d59">จำนวนเงิน (ตัวอักษร)</span><b>(${bahtText(itemsAmt(its))})</b></div>`:""}
   <div style="margin-top:20px;font-size:13px;color:#615d59">หมายเหตุ</div><div style="min-height:48px;border:1px solid #e6e6e6;border-radius:6px;padding:10px 12px">${esc(b.note||"-")}</div>
   <div style="flex:1"></div>
   <div style="display:flex;justify-content:space-between;gap:48px;margin-top:56px;text-align:center;font-size:14px">
-    <div style="flex:1"></div>
-    <div style="flex:1"><div style="border-bottom:1px dotted #615d59;height:48px"></div><div style="margin-top:8px">ผู้รับจอง</div><div style="color:#615d59;font-size:13px">(..................................................)</div><div style="color:#615d59;font-size:13px;margin-top:6px">วันที่ ......../......../........</div></div>
+    <div style="flex:1">${rc?`<div style="border-bottom:1px dotted #615d59;height:48px"></div><div style="margin-top:8px">ผู้ชำระเงิน</div><div style="color:#615d59;font-size:13px">(..................................................)</div><div style="color:#615d59;font-size:13px;margin-top:6px">วันที่ ......../......../........</div>`:""}</div>
+    <div style="flex:1"><div style="border-bottom:1px dotted #615d59;height:48px"></div><div style="margin-top:8px">${rc?"ผู้รับเงิน":"ผู้รับจอง"}</div><div style="color:#615d59;font-size:13px">(..................................................)</div><div style="color:#615d59;font-size:13px;margin-top:6px">วันที่ ......../......../........</div></div>
   </div>
   <div style="margin-top:36px;padding-top:12px;border-top:1px solid #e6e6e6;font-size:12px;color:#a39e98;display:flex;justify-content:space-between"><span>เอกสารออกจาก Oil Palm Seedling Reservation System</span><span>พิมพ์เมื่อ ${now.toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"})}</span></div>
   </div>`;
@@ -486,32 +496,44 @@ async function bookingPdf(id,el){
   const b=S.bookings.find(x=>x.id===id);if(!b)return;
   const say=t=>{if(el.classList&&el.classList.contains("msg"))flash(el,t,false);else{const o=el.textContent;el.textContent=t;setTimeout(()=>{if(el.isConnected)el.textContent=o},2500)}};
   if(!window.html2canvas||!window.jspdf){say("กำลังโหลดตัวสร้าง PDF ลองอีกครั้ง");return}
-  let no=b.docNo;const firstPrint=!no;
-  if(firstPrint){
-    if(!canWrite){say("ยังไม่มีเลขที่ใบจอง และบัญชีนี้บันทึกไม่ได้");return}
-    try{
-      if(sb){const {data,error}=await sb.rpc("assign_doc_no",{p_booking_id:b.id});if(error)throw error;no=data;await reload("bookings")}
-      else{no=nextDocNo(b);await patch("bookings",b.id,{docNo:no,firstPrintedAt:new Date().toISOString()})}
-    }catch(err){say(errText(err));return}
-  }
+  const no=await ensureDocNo(b,say);if(!no)return;
   const copyNo=(+b.printCount||0)+1;
   const doc={...b,docNo:no};
   const orig=el.textContent;if(!el.classList.contains("msg"))el.textContent="กำลังสร้าง…";
-  const host=document.createElement("div");host.style.cssText="position:fixed;left:-10000px;top:0;z-index:-1";host.innerHTML=bookingDocHtml(doc,copyNo);document.body.appendChild(host);
+  try{
+    await savePdf(bookingDocHtml(doc,copyNo),"ใบจอง "+no,`ใบจอง_${no}${copyNo>1?"_สำเนา"+copyNo:""}.pdf`);
+    if(canWrite){try{if(sb){const {error}=await sb.rpc("mark_printed",{p_booking_id:b.id});if(error)throw error;await reload("bookings")}else await patch("bookings",b.id,{printCount:copyNo,lastPrintedAt:new Date().toISOString()})}catch(e){}}
+    if(!el.classList.contains("msg"))el.textContent=orig;else flash(el,"บันทึก PDF แล้ว",true);
+  }catch(err){if(!el.classList.contains("msg"))el.textContent=orig;
+    say("สร้าง PDF ไม่สำเร็จ")}
+}
+/* เลขที่ใบจอง: ออกเลขตอนพิมพ์ครั้งแรก (ใบจองหรือใบเสร็จ) */
+async function ensureDocNo(b,say){if(b.docNo)return b.docNo;
+  if(!canWrite){say("ยังไม่มีเลขที่ใบจอง และบัญชีนี้บันทึกไม่ได้");return null}
+  try{if(sb){const {data,error}=await sb.rpc("assign_doc_no",{p_booking_id:b.id});if(error)throw error;await reload("bookings");return data}
+    const no=nextDocNo(b);await patch("bookings",b.id,{docNo:no,firstPrintedAt:new Date().toISOString()});return no}
+  catch(err){say(errText(err));return null}}
+async function savePdf(html,title,file){
+  const host=document.createElement("div");host.style.cssText="position:fixed;left:-10000px;top:0;z-index:-1";host.innerHTML=html;document.body.appendChild(host);
   try{
     try{await document.fonts.ready}catch(e){}
     const canvas=await html2canvas(host.firstElementChild,{scale:2,backgroundColor:"#ffffff",useCORS:true,logging:false});
     const pdf=new window.jspdf.jsPDF({unit:"pt",format:"a4",orientation:"portrait"});
     const W=pdf.internal.pageSize.getWidth(),H=pdf.internal.pageSize.getHeight();
     pdf.addImage(canvas.toDataURL("image/jpeg",0.92),"JPEG",0,0,W,Math.min(H,canvas.height*W/canvas.width));
-    pdf.setProperties({title:"ใบจอง "+no});
-    pdf.save(`ใบจอง_${no}${copyNo>1?"_สำเนา"+copyNo:""}.pdf`);
-    if(canWrite){try{if(sb){const {error}=await sb.rpc("mark_printed",{p_booking_id:b.id});if(error)throw error;await reload("bookings")}else await patch("bookings",b.id,{printCount:copyNo,lastPrintedAt:new Date().toISOString()})}catch(e){}}
-    if(!el.classList.contains("msg"))el.textContent=orig;else flash(el,"บันทึก PDF แล้ว",true);
-  }catch(err){if(!el.classList.contains("msg"))el.textContent=orig;
-    say("สร้าง PDF ไม่สำเร็จ")}
-  finally{host.remove()}
-}
+    pdf.setProperties({title});pdf.save(file);
+  }finally{host.remove()}}
+/* ใบเสร็จรับเงิน (ใบจองสถานะ จอง / ยืนยัน): เลขที่ RC + เลขเดียวกับใบจอง · ทุกรายการต้องมีราคาต่อต้น */
+const rcNoOf=no=>"RC"+no.replace(/^BK/,"");
+async function receiptPdf(id,el){
+  const b=S.bookings.find(x=>x.id===id);if(!b)return;
+  const say=t=>{const o=el.textContent;el.textContent=t;setTimeout(()=>{if(el.isConnected)el.textContent=o},2500)};
+  const its=itemsOf(b);if(!its.length||!its.every(hasPrice)){say("ยังไม่ได้ใส่ราคาต่อต้น");el.title="กด “แก้ไข” เพื่อใส่ราคาต่อต้นของทุกรายการก่อน";return}
+  if(!window.html2canvas||!window.jspdf){say("กำลังโหลดตัวสร้าง PDF ลองอีกครั้ง");return}
+  const no=await ensureDocNo(b,say);if(!no)return;const rc=rcNoOf(no);
+  const orig=el.textContent;el.textContent="กำลังสร้าง…";
+  try{await savePdf(bookingDocHtml({...b,docNo:no},1,{no:rc}),"ใบเสร็จรับเงิน "+rc,`ใบเสร็จรับเงิน_${rc}.pdf`);el.textContent=orig}
+  catch(err){el.textContent=orig;say("สร้าง PDF ไม่สำเร็จ")}}
 /* ดูใบจองบนจอ: แสดงหน้าเดียวกับ PDF ย่อให้พอดีจอ · ใบที่ยังไม่เคยพิมพ์ยังไม่มีเลขที่ (ออกเลขตอนพิมพ์ PDF ครั้งแรก) */
 let dlgId=null;
 function docPaper(b){$("#docPaper").innerHTML=`<div class="paper">${bookingDocHtml({...b,docNo:b.docNo||"(ออกเลขเมื่อพิมพ์ PDF)"},(+b.printCount||0)+1)}</div>`;fitDoc()}
