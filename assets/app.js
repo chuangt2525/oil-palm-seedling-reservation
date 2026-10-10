@@ -207,7 +207,7 @@ function renderBookCheck(C){
   const bl0=editId?"บันทึกการแก้ไข":"บันทึกการจอง";btn.textContent=pend.length>1?`${bl0} · ${fmt(pend.length)} รายการ ${fmt(tq)} ต้น`:bl0;
   $("#b_add").disabled=cur!=="ok";
   const ce=$("#cart");ce.hidden=!cart.length;
-  ce.innerHTML=cart.length?`<div class="cart"><div class="ch">รายการในใบจองนี้</div>${cart.map((i,k)=>`<div class="ci"><span class="nm">${esc(itemLabel(i))}${hasPrice(i)?`<div class="small muted">ต้นละ ${money(i.price)} บาท · เป็นเงิน ${money(amt(i))} บาท</div>`:""}</span><span class="q num">${fmt(i.qty)} ต้น</span><button class="btn sm ghost" type="button" data-crm="${k}" aria-label="เอารายการ ${esc(itemLabel(i))} ออก">เอาออก</button></div>`).join("")}<div class="ci tot"><span class="nm">รวม ${fmt(cart.length)} รายการ</span><span class="q num">${fmt(cart.reduce((s,i)=>s+i.qty,0))} ต้น${priced(cart)?`<div class="small">${money(itemsAmt(cart))} บาท</div>`:""}</span></div></div>`:"";
+  ce.innerHTML=cart.length?`<div class="cart"><div class="ch">รายการในใบจองนี้</div>${cart.map((i,k)=>`<div class="ci"><span class="nm">${esc(itemLabel(i))}<div class="small muted">${hasPrice(i)?`เป็นเงิน ${money(amt(i))} บาท · `:""}จองได้สูงสุด ${fmt(lineMax(C,k))} ต้น</div></span><span class="cin"><label>จำนวน (ต้น)<input type="number" min="1" step="1" inputmode="numeric" value="${i.qty}" data-cq="${k}" aria-label="จำนวน ${esc(itemLabel(i))}"></label><label>ราคา/ต้น<input type="number" min="0" step="0.01" inputmode="decimal" value="${hasPrice(i)?i.price:""}" placeholder="ไม่ระบุ" data-cp="${k}" aria-label="ราคาต่อต้น ${esc(itemLabel(i))}"></label></span><button class="btn sm ghost" type="button" data-crm="${k}" aria-label="เอารายการ ${esc(itemLabel(i))} ออก">เอาออก</button></div>`).join("")}<div class="ci tot"><span class="nm">รวม ${fmt(cart.length)} รายการ</span><span class="q num">${fmt(cart.reduce((s,i)=>s+i.qty,0))} ต้น${priced(cart)?`<div class="small">${money(itemsAmt(cart))} บาท</div>`:""}</span></div></div>`:"";
   const bl=bucketList(C);
   $("#availMini").innerHTML=bl.length?`<table><thead><tr><th>Lot / สายพันธุ์</th><th class="r">ขายได้</th><th class="r">จองแล้ว</th><th class="r">คงเหลือจองได้</th><th class="r">อัตราจอง</th></tr></thead><tbody>${bl.map(r=>`<tr><td>${esc(bucketLabel(r.key))}</td><td class="r num">${fmt(r.net)}</td><td class="r num">${fmt(r.booked)}</td><td class="r num" style="font-weight:600;color:var(${r.available>0?"--ok":"--bad"})">${fmt(r.available)}</td><td class="r num">${r.rate.toFixed(1)}%</td></tr>`).join("")}</tbody></table>`:`<div class="empty">ยังไม่มียอดเพาะ — บันทึกการเพาะลงแปลงก่อนจึงจองได้</div>`;
   cardify();
@@ -233,7 +233,7 @@ function itemCells(b){const its=itemsOf(b),am=i=>hasPrice(i)?money(amt(i)):"-",t
   if(its.length<2)return `<td>${its.length?esc(itemLabel(its[0])):"-"}</td><td class="r num">${fmt(bQty(b))}</td><td class="r num">${tot}${its[0]&&hasPrice(its[0])?`<div class="small muted">ต้นละ ${money(its[0].price)}</div>`:""}</td>`;
   return `<td><div class="items">${its.map(i=>`<div>${esc(itemLabel(i))}</div>`).join("")}<div class="itot">รวม ${fmt(its.length)} รายการ</div></div></td><td class="r num"><div class="items">${its.map(i=>`<div>${fmt(i.qty)}</div>`).join("")}<div class="itot">${fmt(bQty(b))}</div></div></td><td class="r num"><div class="items">${its.map(i=>`<div>${am(i)}</div>`).join("")}<div class="itot">${tot}</div></div></td>`}
 /* ใบจองที่ออกเลขที่แล้วแก้ไขรายการได้ (บันทึกทับใบเดิม เลขที่ไม่เปลี่ยน) */
-function receiptButton(b){return b.status==="reserved"||b.status==="confirmed"?`<button class="btn sm ghost" data-brc="${esc(b.id)}" type="button">พิมพ์ใบเสร็จ</button>`:""}
+function receiptButton(b){return ["reserved","confirmed","delivered"].includes(b.status)?`<button class="btn sm ghost" data-brc="${esc(b.id)}" type="button">พิมพ์ใบเสร็จ</button>`:""}
 function editButton(b){return b.docNo&&holds(b)?`<button class="btn sm ghost" data-bedit="${esc(b.id)}" type="button">แก้ไข</button>`:""}
 function statusButtons(b){
   const btn=(st,l,cls)=>`<button class="btn sm ${cls||"ghost"}" data-bst="${st}" data-id="${esc(b.id)}" type="button">${l}</button>`;
@@ -293,7 +293,7 @@ try{const t=localStorage.getItem("palmTab");if(t){const b=document.querySelector
 $("#lotPick").addEventListener("click",e=>{const b=e.target.closest(".lot");if(!b||b.disabled)return;$("#b_var").value=b.dataset.key;
   const lp=lastPrice(b.dataset.key.split("|")[1]);if(lp!=null)$("#b_price").value=lp;renderBookCheck(calc(editId));$("#b_qty").focus({preventScroll:true})});
 $("#b_lastpdf").addEventListener("click",()=>{if(lastBooked)showDoc(lastBooked)});
-$("#checkBox").addEventListener("click",e=>{if(e.target.id==="useMax"){$("#b_qty").value=Math.max(0,checkAvail($("#b_var").value,0,cart).avail);renderBookCheck(calc())}});
+$("#checkBox").addEventListener("click",e=>{if(e.target.id==="useMax"){$("#b_qty").value=Math.max(0,checkAvail($("#b_var").value,0,cart).avail);renderBookCheck(calc(editId))}});
 /* ใบจองหลายรายการ: เลือก Lot + จำนวน แล้วกด "เพิ่มรายการ" ซ้ำได้ · รายการที่เลือกค้างไว้ (จองได้) จะถูกรวมตอนบันทึกด้วย */
 let cart=[];
 function pendingItems(m){const items=cart.map(i=>({...i}));const vid=$("#b_var").value,q=parseInt($("#b_qty").value,10)||0;
@@ -306,8 +306,20 @@ function lastPrice(varietyId){const inCart=cart.find(i=>i.varietyId===varietyId&
   for(const b of bs){const i=itemsOf(b).find(x=>x.varietyId===varietyId&&hasPrice(x));if(i)return i.price}return null}
 $("#b_add").addEventListener("click",()=>{const m=$("#b_msg");if(!$("#b_var").value){flash(m,"แตะเลือก Lot / สายพันธุ์ก่อน");return}
   if(!(parseInt($("#b_qty").value,10)>0)){flash(m,"ระบุจำนวนก่อน");return}
-  const items=pendingItems(m);if(!items)return;cart=items;$("#b_var").value="";$("#b_qty").value="";$("#b_price").value="";m.textContent="";renderBookCheck(calc())});
-$("#cart").addEventListener("click",e=>{const b=e.target.closest("[data-crm]");if(!b)return;cart.splice(+b.dataset.crm,1);renderBookCheck(calc())});
+  const items=pendingItems(m);if(!items)return;cart=items;$("#b_var").value="";$("#b_qty").value="";$("#b_price").value="";m.textContent="";renderBookCheck(calc(editId))});
+$("#cart").addEventListener("click",e=>{const b=e.target.closest("[data-crm]");if(!b)return;cart.splice(+b.dataset.crm,1);renderBookCheck(calc(editId))});
+/* แก้จำนวน / ราคาของรายการในใบจองได้ตรงบรรทัด · จำนวนเกินยอดคงเหลือจะปรับเป็นจำนวนสูงสุดที่จองได้ */
+function lineMax(C,k){const i=cart[k],others=cart.filter((_,j)=>j!==k);
+  if(i.lot)return Math.max(0,availFor(C,i.lot+"|"+i.varietyId,others));
+  const v=C.byVar[i.varietyId];return Math.max(0,v?v.available-others.filter(o=>o.varietyId===i.varietyId).reduce((s,o)=>s+(+o.qty||0),0):0)}
+$("#cart").addEventListener("change",e=>{const t=e.target,m=$("#b_msg");
+  if(t.dataset.cq!=null){const k=+t.dataset.cq,q=parseInt(t.value,10),mx=lineMax(calc(editId),k);
+    if(!(q>0))flash(m,"จำนวนต้องมากกว่า 0");
+    else if(q>mx){cart[k].qty=mx;flash(m,`${itemLabel(cart[k])} จองได้สูงสุด ${fmt(mx)} ต้น`)}
+    else{cart[k].qty=q;m.textContent=""}}
+  else if(t.dataset.cp!=null){const v=t.value.trim();cart[+t.dataset.cp].price=v===""||!(+v>=0)?null:+v}
+  else return;
+  renderBookCheck(calc(editId))});
 $("#bookForm").addEventListener("submit",async e=>{e.preventDefault();const m=$("#b_msg");
   const items=pendingItems(m);if(!items)return;if(!items.length){flash(m,"แตะเลือก Lot / สายพันธุ์ และระบุจำนวนก่อน");return}
   if(!itemsFit(items,editId)){flash(m,"ยอดคงเหลือเปลี่ยนไปแล้ว ตรวจสอบจำนวนในใบจองนี้อีกครั้ง");return}
@@ -318,7 +330,7 @@ $("#bookForm").addEventListener("submit",async e=>{e.preventDefault();const m=$(
     catch(err){flash(m,errText(err))}
     return}
   try{const nid=uid();await save("bookings",nid,{date:$("#b_date").value,items,qty:total,customer:$("#b_cust").value.trim(),phone:$("#b_phone").value.trim(),pickupDate:$("#b_pick").value,note:$("#b_note").value.trim(),status:"reserved",createdAt:new Date().toISOString()});
-    flash(m,`บันทึกการจอง ${items.length>1?fmt(items.length)+" รายการ รวม ":""}${fmt(total)} ต้นแล้ว`,true);lastBooked=nid;$("#b_lastpdf").hidden=false;cart=[];$("#b_var").value="";["#b_qty","#b_price","#b_cust","#b_phone","#b_note","#b_pick"].forEach(s=>$(s).value="");renderBookCheck(calc());showDoc(nid)}
+    flash(m,`บันทึกการจอง ${items.length>1?fmt(items.length)+" รายการ รวม ":""}${fmt(total)} ต้นแล้ว`,true);lastBooked=nid;$("#b_lastpdf").hidden=false;cart=[];$("#b_var").value="";["#b_qty","#b_price","#b_cust","#b_phone","#b_note","#b_pick"].forEach(s=>$(s).value="");renderBookCheck(calc(editId));showDoc(nid)}
   catch(err){flash(m,errText(err))}});
 
 ["#l_date","#l_var","#l_st","#l_q"].forEach(s=>$(s).addEventListener("input",renderList));
@@ -523,7 +535,7 @@ async function savePdf(html,title,file){
     pdf.addImage(canvas.toDataURL("image/jpeg",0.92),"JPEG",0,0,W,Math.min(H,canvas.height*W/canvas.width));
     pdf.setProperties({title});pdf.save(file);
   }finally{host.remove()}}
-/* ใบเสร็จรับเงิน (ใบจองสถานะ จอง / ยืนยัน): เลขที่ RC + เลขเดียวกับใบจอง · ทุกรายการต้องมีราคาต่อต้น */
+/* ใบเสร็จรับเงิน (ใบจองสถานะ จอง / ยืนยัน / ส่งมอบแล้ว): เลขที่ RC + เลขเดียวกับใบจอง · ทุกรายการต้องมีราคาต่อต้น */
 const rcNoOf=no=>"RC"+no.replace(/^BK/,"");
 async function receiptPdf(id,el){
   const b=S.bookings.find(x=>x.id===id);if(!b)return;

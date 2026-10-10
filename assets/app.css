@@ -133,9 +133,12 @@ nav.tabs .s{display:none}
 .editbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:-4px 0 12px;padding:8px 12px;border-radius:8px;background:var(--primary-soft);color:var(--primary);font-size:13px}
 .cart{border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .cart .ch{padding:8px 12px;font-size:13px;font-weight:600;color:var(--muted);background:var(--bg)}
-.cart .ci{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line)}
-.cart .ci .nm{flex:1;min-width:0}
+.cart .ci{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line)}
+.cart .ci .nm{flex:1 1 180px;min-width:0}
 .cart .ci .q{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cart .cin{display:flex;gap:8px}
+.cart .cin label{font-size:12px;gap:2px}
+.cart .cin input{width:96px;padding:5px 8px;text-align:right;font-variant-numeric:tabular-nums}
 .cart .ci.tot{background:var(--bg);font-weight:700}
 .items>div+div{margin-top:2px}
 .items .itot{margin-top:4px;padding-top:4px;border-top:1px solid var(--line);font-weight:700;font-size:13px}
